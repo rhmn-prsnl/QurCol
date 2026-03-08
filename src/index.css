@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-50: #fbf9f1;
+  --color-gold-100: #f5f0db;
+  --color-gold-200: #eaddb6;
+  --color-gold-300: #dfc488;
+  --color-gold-400: #d4a759;
+  --color-gold-500: #cb8f34;
+  --color-gold-600: #b27228;
+  --color-gold-700: #945724;
+  --color-gold-800: #7a4624;
+  --color-gold-900: #643a20;
+  --color-gold-950: #391e0f;
+
+  --font-sans: "Playfair Display", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-marquee: marquee 25s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
+  }
+}
+
+body {
+  @apply bg-white text-black dark:bg-[#0a0a0a] dark:text-white;
+}
