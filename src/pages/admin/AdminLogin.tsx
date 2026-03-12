@@ -24,18 +24,23 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // Mocking admin login for now
-      if (email === 'admin@example.com' && password === 'admin') {
-        const mockAdmin = {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@example.com',
-          role: 'admin',
-        };
-        login('mock-admin-token', mockAdmin);
-        navigate('/admin/dashboard');
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.user.role === 'admin' || data.user.role === 'super_admin') {
+          login(data.token, data.user);
+          navigate('/admin/dashboard');
+        } else {
+          setError('Access denied. Admin privileges required.');
+        }
       } else {
-        setError('Invalid admin credentials');
+        setError(data.error || 'Invalid admin credentials');
       }
     } catch (err) {
       setError('Network error. Please try again.');

@@ -67,7 +67,9 @@ export default function Dashboard() {
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-black dark:text-white">Welcome back, {user?.name}!</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 mt-2">Continue your learning journey.</p>
+            <p className="text-zinc-600 dark:text-zinc-400 mt-2">
+              {user?.role === 'faculty' ? 'Manage your assigned courses.' : 'Continue your learning journey.'}
+            </p>
           </div>
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg border border-gold-200/50 dark:border-gold-900/30">
             <button
@@ -78,7 +80,7 @@ export default function Dashboard() {
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white'
               }`}
             >
-              My Courses
+              {user?.role === 'faculty' ? 'Assigned Courses' : 'My Courses'}
             </button>
             <button
               onClick={() => setActiveTab('profile')}
@@ -95,7 +97,9 @@ export default function Dashboard() {
 
         {activeTab === 'courses' ? (
           <>
-            <h2 className="text-2xl font-bold text-black dark:text-white mb-6">My Subscribed Courses</h2>
+            <h2 className="text-2xl font-bold text-black dark:text-white mb-6">
+              {user?.role === 'faculty' ? 'My Assigned Courses' : 'My Subscribed Courses'}
+            </h2>
 
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
@@ -132,10 +136,14 @@ export default function Dashboard() {
                       <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-zinc-500 dark:text-zinc-400 flex items-center">
-                            <Clock className="w-4 h-4 mr-1" /> Expiry Date:
+                            {user?.role === 'faculty' ? (
+                              <><User className="w-4 h-4 mr-1" /> Students Enrolled:</>
+                            ) : (
+                              <><Clock className="w-4 h-4 mr-1" /> Expiry Date:</>
+                            )}
                           </span>
                           <span className="font-medium text-black dark:text-white">
-                            {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                            {user?.role === 'faculty' ? course.students : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -144,7 +152,7 @@ export default function Dashboard() {
                         to={`/courses/${course.id}/videos`}
                         className="mt-6 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-black bg-gold-500 hover:bg-gold-400 transition-colors shadow-gold-900/20"
                       >
-                        Watch Classes Videos
+                        {user?.role === 'faculty' ? 'View Course Content' : 'Watch Classes Videos'}
                       </Link>
                     </div>
                   </motion.div>

@@ -75,8 +75,16 @@ export default function AdminPopups() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Image URL (Optional)</label>
-                  <input type="text" defaultValue={popup.imageUrl} className="w-full px-4 py-2 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-lg text-black dark:text-white" />
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Popup Image (Optional)</label>
+                  <div className="flex flex-col space-y-2">
+                    <label className="flex items-center justify-center px-4 py-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors w-full">
+                      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Upload Image</span>
+                      <input type="file" className="hidden" accept="image/*" />
+                    </label>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Recommended: 600x400px, Max 1MB (JPG, PNG, WebP)
+                    </span>
+                  </div>
                 </div>
                 {popup.imageUrl && (
                   <div className="mt-2 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 h-32 relative">

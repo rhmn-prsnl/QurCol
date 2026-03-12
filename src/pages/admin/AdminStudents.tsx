@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
 import { Users, Shield, ShieldAlert, Plus, Video, VideoOff } from 'lucide-react';
 
-export default function AdminUsers() {
+export default function AdminStudents() {
   const { token, user: currentUser } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +14,6 @@ export default function AdminUsers() {
   const fetchUsers = () => {
     // Mock data for now since we don't have a real backend
     const mockUsers = [
-      { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'admin', created_at: new Date().toISOString(), videoAccess: true },
       { id: '2', name: 'Student One', email: 'student1@example.com', role: 'user', created_at: new Date().toISOString(), videoAccess: true },
       { id: '3', name: 'Student Two', email: 'student2@example.com', role: 'user', created_at: new Date().toISOString(), videoAccess: false },
     ];
@@ -52,23 +51,23 @@ export default function AdminUsers() {
     }));
   };
 
-  if (isLoading) return <div>Loading users...</div>;
+  if (isLoading) return <div>Loading students...</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-black dark:text-white">Manage Users</h1>
+        <h1 className="text-2xl font-bold text-black dark:text-white">Manage Students</h1>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className="flex items-center px-4 py-2 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors shadow-sm shadow-gold-900/20 font-medium"
         >
-          <Plus className="w-5 h-5 mr-2" /> Add User
+          <Plus className="w-5 h-5 mr-2" /> Add Student
         </button>
       </div>
 
       {isAdding && (
         <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-gold-200/50 dark:border-gold-900/30 mb-8">
-          <h2 className="text-lg font-bold text-black dark:text-white mb-4">Add New User</h2>
+          <h2 className="text-lg font-bold text-black dark:text-white mb-4">Add New Student</h2>
           {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
           <form onSubmit={handleAddUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

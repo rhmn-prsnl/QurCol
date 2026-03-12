@@ -24,7 +24,8 @@ export default function CourseLearn() {
           category: 'Web Development',
           level: 'Advanced',
           instructor: 'Sarah Drasner',
-          thumbnail: `https://picsum.photos/seed/${id}/800/600`
+          thumbnail: `https://picsum.photos/seed/${id}/800/600`,
+          created_at: new Date().toISOString()
         };
         
         setCourse(mockCourse);

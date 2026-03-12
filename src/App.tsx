@@ -6,14 +6,18 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Newsletter from './components/Newsletter';
 
+import ScrollToTop from './components/ScrollToTop';
+
 // Public Pages
 import Home from './pages/Home';
 import About from './pages/About';
 import Courses from './pages/Courses';
+import Activities from './pages/Activities';
+import Videos from './pages/Videos';
 import Events from './pages/Events';
 import Blogs from './pages/Blogs';
 import Donation from './pages/Donation';
-import Enquiry from './pages/Enquiry';
+import Inquiry from './pages/Inquiry';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 
@@ -27,7 +31,14 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCourses from './pages/admin/AdminCourses';
-import AdminUsers from './pages/admin/AdminUsers';
+import AdminVideos from './pages/admin/AdminVideos';
+import AdminStudents from './pages/admin/AdminStudents';
+import AdminFaculties from './pages/admin/AdminFaculties';
+import AdminActivities from './pages/admin/AdminActivities';
+import AdminEvents from './pages/admin/AdminEvents';
+import AdminDonations from './pages/admin/AdminDonations';
+import AdminContacts from './pages/admin/AdminContacts';
+import AdminInquiries from './pages/admin/AdminInquiries';
 
 import AdminContent from './pages/admin/AdminContent';
 import AdminPopups from './pages/admin/AdminPopups';
@@ -51,10 +62,12 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseLearn />} />
+          <Route path="/activities" element={<Activities />} />
+          <Route path="/videos" element={<Videos />} />
           <Route path="/events" element={<Events />} />
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/donation" element={<Donation />} />
-          <Route path="/enquiry" element={<Enquiry />} />
+          <Route path="/inquiry" element={<Inquiry />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
 
@@ -69,7 +82,14 @@ const AppContent = () => {
             <Route path="content" element={<AdminContent />} />
             <Route path="popups" element={<AdminPopups />} />
             <Route path="courses" element={<AdminCourses />} />
-            <Route path="users" element={<AdminUsers />} />
+            <Route path="videos" element={<AdminVideos />} />
+            <Route path="students" element={<AdminStudents />} />
+            <Route path="faculties" element={<AdminFaculties />} />
+            <Route path="activities" element={<AdminActivities />} />
+            <Route path="events" element={<AdminEvents />} />
+            <Route path="inquiries" element={<AdminInquiries />} />
+            <Route path="donations" element={<AdminDonations />} />
+            <Route path="contacts" element={<AdminContacts />} />
           </Route>
         </Routes>
       </main>
@@ -84,6 +104,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <AppContent />
         </Router>
       </AuthProvider>

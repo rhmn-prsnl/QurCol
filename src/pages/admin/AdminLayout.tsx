@@ -1,16 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, Settings, FileText } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, Settings, FileText, Video, Calendar, Activity, Heart, Mail, GraduationCap, MessageSquare } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminLayout() {
   const location = useLocation();
+  const { token } = useAuth();
+  const [badges, setBadges] = useState({ inquiries: 0, contacts: 0, donations: 0 });
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const res = await fetch('/api/admin/badges', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBadges(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch badges', err);
+      }
+    };
+
+    fetchBadges();
+    // Refresh badges every 30 seconds
+    const interval = setInterval(fetchBadges, 30000);
+    return () => clearInterval(interval);
+  }, [token, location.pathname]); // Refresh when route changes too
 
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Site Content', path: '/admin/dashboard/content', icon: FileText },
     { name: 'Pop-ups', path: '/admin/dashboard/popups', icon: Settings },
-    { name: 'Courses & Videos', path: '/admin/dashboard/courses', icon: BookOpen },
-    { name: 'Students', path: '/admin/dashboard/users', icon: Users },
+    { name: 'Courses', path: '/admin/dashboard/courses', icon: BookOpen },
+    { name: 'Videos', path: '/admin/dashboard/videos', icon: Video },
+    { name: 'Students', path: '/admin/dashboard/students', icon: Users },
+    { name: 'Faculties', path: '/admin/dashboard/faculties', icon: GraduationCap },
+    { name: 'Activities', path: '/admin/dashboard/activities', icon: Activity },
+    { name: 'Events', path: '/admin/dashboard/events', icon: Calendar },
+    { name: 'Inquiries', path: '/admin/dashboard/inquiries', icon: MessageSquare, badge: badges.inquiries },
+    { name: 'Donations', path: '/admin/dashboard/donations', icon: Heart, badge: badges.donations },
+    { name: 'Contact Forms', path: '/admin/dashboard/contacts', icon: Mail, badge: badges.contacts },
   ];
 
   return (
@@ -33,6 +71,11 @@ export default function AdminLayout() {
                 >
                   <Icon className="w-5 h-5 transition duration-75" />
                   <span className="ml-2 text-sm">{item.name}</span>
+                  {item.badge ? (
+                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </Link>
               </li>
             );
@@ -58,7 +101,12 @@ export default function AdminLayout() {
                     }`}
                   >
                     <Icon className="w-5 h-5 transition duration-75" />
-                    <span className="ml-3">{item.name}</span>
+                    <span className="ml-3 flex-1">{item.name}</span>
+                    {item.badge ? (
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 </li>
               );
@@ -68,7 +116,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 p-4 md:p-8 overflow-y-auto">
         <Outlet />
       </main>
     </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Send, MessageSquare, User, Mail, Phone, BookOpen } from 'lucide-react';
 
-export default function Enquiry() {
+export default function Inquiry() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,12 +23,32 @@ export default function Enquiry() {
     setIsSubmitting(true);
     setSubmitMessage({ type: '', text: '' });
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        console.log('Sending email to admin:', {
+          datetime: new Date().toLocaleString(),
+          ...formData
+        });
+        console.log(`Sending confirmation email to user: ${formData.email}`);
+        
+        setSubmitMessage({ type: 'success', text: 'Thank you for your inquiry. We will get back to you shortly!' });
+        setFormData({ name: '', email: '', phone: '', gender: '', course: '', message: '' });
+      } else {
+        setSubmitMessage({ type: 'error', text: 'Failed to submit inquiry. Please try again.' });
+      }
+    } catch (error) {
+      setSubmitMessage({ type: 'error', text: 'Network error. Please try again.' });
+    } finally {
       setIsSubmitting(false);
-      setSubmitMessage({ type: 'success', text: 'Thank you for your enquiry. We will get back to you shortly!' });
-      setFormData({ name: '', email: '', phone: '', gender: '', course: '', message: '' });
-    }, 1500);
+    }
   };
 
   return (
@@ -40,7 +60,7 @@ export default function Enquiry() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-extrabold text-black dark:text-white mb-4 tracking-tight"
           >
-            Course Enquiry
+            Course Inquiry
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -125,7 +145,7 @@ export default function Enquiry() {
                       value={formData.phone}
                       onChange={handleChange}
                       className="block w-full pl-10 pr-3 py-3 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500 transition-colors"
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+91 98765 43210"
                     />
                   </div>
                 </div>
@@ -148,8 +168,6 @@ export default function Enquiry() {
                       <option value="">Select gender...</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="prefer-not-to-say">Prefer not to say</option>
                     </select>
                   </div>
                 </div>
@@ -175,7 +193,7 @@ export default function Enquiry() {
                     <option value="data-science">Data Science Fundamentals</option>
                     <option value="ui-ux">UI/UX Design Masterclass</option>
                     <option value="mobile-dev">Mobile App Development</option>
-                    <option value="other">Other / General Enquiry</option>
+                    <option value="other">Other / General Inquiry</option>
                   </select>
                 </div>
               </div>
@@ -208,11 +226,11 @@ export default function Enquiry() {
                   className="w-full flex justify-center items-center py-4 px-4 border border-transparent text-lg font-medium rounded-lg text-black bg-gold-500 hover:bg-gold-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 transition-colors disabled:opacity-70 shadow-sm shadow-gold-900/20"
                 >
                   {isSubmitting ? (
-                    'Sending Enquiry...'
+                    'Sending Inquiry...'
                   ) : (
                     <>
                       <Send className="mr-2 h-5 w-5" />
-                      Submit Enquiry
+                      Submit Inquiry
                     </>
                   )}
                 </button>

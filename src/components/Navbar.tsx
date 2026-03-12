@@ -14,9 +14,11 @@ export default function Navbar() {
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Courses', path: '/courses' },
-    { name: 'Donation', path: '/donation' },
+    { name: 'Our Activities', path: '/activities' },
+    { name: 'Videos', path: '/videos' },
     { name: 'Events', path: '/events' },
     { name: 'Blogs', path: '/blogs' },
+    { name: 'Donation', path: '/donation' },
     { name: 'Contact', path: '/contact' },
   ];
 
@@ -51,10 +53,10 @@ export default function Navbar() {
 
             <div className="flex items-center space-x-4 border-l border-zinc-200 dark:border-zinc-800 pl-4">
               <Link
-                to="/enquiry"
+                to="/inquiry"
                 className="px-4 py-2 text-sm font-medium text-black bg-gold-500 hover:bg-gold-400 rounded-lg transition-colors"
               >
-                Enquiry
+                Inquiry
               </Link>
               {user ? (
                 <div className="flex items-center space-x-4">
@@ -115,11 +117,11 @@ export default function Navbar() {
               </Link>
             ))}
             <Link
-              to="/enquiry"
+              to="/inquiry"
               onClick={() => setIsOpen(false)}
               className="block px-3 py-2 mt-4 rounded-md text-base font-medium text-black bg-gold-500 hover:bg-gold-400 text-center transition-colors"
             >
-              Enquiry
+              Inquiry
             </Link>
             {user ? (
               <>

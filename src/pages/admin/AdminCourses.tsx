@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Course } from '../../types';
-import { Plus, Edit, Trash2, Video } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 
 export default function AdminCourses() {
   const { token } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: '', description: '', category: '', level: '', instructor: '', thumbnail: '' });
+
+  // Mock faculties list
+  const faculties = [
+    { id: 'f1', name: 'John Doe' },
+    { id: 'f2', name: 'Jane Smith' },
+    { id: 'f3', name: 'Dr. Alan Turing' }
+  ];
 
   useEffect(() => {
     fetchCourses();
@@ -85,11 +92,30 @@ export default function AdminCourses() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Instructor</label>
-                <input required type="text" value={newCourse.instructor} onChange={e => setNewCourse({...newCourse, instructor: e.target.value})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" />
+                <select 
+                  required 
+                  value={newCourse.instructor} 
+                  onChange={e => setNewCourse({...newCourse, instructor: e.target.value})} 
+                  className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
+                >
+                  <option value="">Select Instructor</option>
+                  {faculties.map(faculty => (
+                    <option key={faculty.id} value={faculty.name}>{faculty.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Thumbnail URL</label>
-                <input type="text" value={newCourse.thumbnail} onChange={e => setNewCourse({...newCourse, thumbnail: e.target.value})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" />
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Thumbnail Image</label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center justify-center px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                    <ImageIcon className="w-5 h-5 mr-2 text-zinc-500" />
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Upload Image</span>
+                    <input type="file" className="hidden" accept="image/*" />
+                  </label>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Recommended: 1280x720px, Max 2MB (JPG, PNG, WebP)
+                  </span>
+                </div>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
@@ -119,15 +145,12 @@ export default function AdminCourses() {
               {courses.map(course => (
                 <tr key={course.id} className="bg-zinc-50 border-b border-gold-100 dark:bg-zinc-900 dark:border-gold-900/20 hover:bg-white dark:hover:bg-black transition-colors">
                   <td className="px-6 py-4 font-medium text-black dark:text-white flex items-center gap-3">
-                    <img src={course.thumbnail || `https://picsum.photos/seed/${course.id}/100/100`} alt="" className="w-10 h-10 rounded object-cover grayscale-[20%]" />
+                    <img src={course.thumbnail || `https://picsum.photos/seed/${course.id}/100/100`} alt="" className="w-10 h-10 rounded object-cover grayscale-[20%]" referrerPolicy="no-referrer" />
                     {course.title}
                   </td>
                   <td className="px-6 py-4">{course.category}</td>
                   <td className="px-6 py-4">{course.instructor}</td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-gold-600 dark:text-gold-400 hover:underline mr-3" title="Manage Content">
-                      <Video className="w-4 h-4 inline" />
-                    </button>
                     <button className="text-zinc-600 dark:text-zinc-400 hover:underline mr-3" title="Edit">
                       <Edit className="w-4 h-4 inline" />
                     </button>
