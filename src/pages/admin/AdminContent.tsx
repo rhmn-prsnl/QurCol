@@ -166,12 +166,38 @@ export default function AdminContent() {
                     <label className="flex items-center justify-center px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
                       <ImageIcon className="w-5 h-5 mr-2 text-zinc-500" />
                       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Upload Image</span>
-                      <input type="file" className="hidden" accept="image/*" />
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              handleSectionChange(activeTab, section.id, 'image', reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
                     </label>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400">
                       Recommended: 1920x1080px, Max 2MB (JPG, PNG, WebP)
                     </span>
                   </div>
+                  {section.image && (
+                    <div className="mt-4 relative w-32 h-32">
+                      <img src={section.image} alt="Preview" className="w-full h-full object-cover rounded-lg border border-gold-200/50 dark:border-gold-900/30" referrerPolicy="no-referrer" />
+                      <button 
+                        type="button" 
+                        onClick={() => handleSectionChange(activeTab, section.id, 'image', '')}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

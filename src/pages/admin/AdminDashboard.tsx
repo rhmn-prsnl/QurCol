@@ -4,7 +4,7 @@ import { Users, BookOpen, Video, TrendingUp, MessageSquare, Heart, Mail } from '
 
 export default function AdminDashboard() {
   const { token } = useAuth();
-  const [stats, setStats] = useState({ users: 0, courses: 0, videos: 0 });
+  const [stats, setStats] = useState({ users: 0, courses: 0, videos: 0, subscribers: 0 });
   const [badges, setBadges] = useState({ inquiries: 0, contacts: 0, donations: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,8 +20,14 @@ export default function AdminDashboard() {
           setBadges(badgesData);
         }
 
-        // Mock fetching stats
-        setStats({ users: 156, courses: 12, videos: 84 });
+        // Fetch stats
+        const statsRes = await fetch('/api/admin/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        }
       } catch (err) {
         console.error('Failed to fetch dashboard data', err);
       } finally {
@@ -71,11 +77,11 @@ export default function AdminDashboard() {
 
         <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-gold-200/50 dark:border-gold-900/30 flex items-center">
           <div className="p-3 rounded-full bg-gold-100 dark:bg-gold-900/30 text-gold-600 dark:text-gold-400 mr-4">
-            <TrendingUp className="h-6 w-6" />
+            <Mail className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Active Enrollments</p>
-            <p className="text-2xl font-bold text-black dark:text-white">124</p>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Active Subscribers</p>
+            <p className="text-2xl font-bold text-black dark:text-white">{stats.subscribers}</p>
           </div>
         </div>
       </div>

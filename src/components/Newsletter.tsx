@@ -1,7 +1,39 @@
-import React from 'react';
-import { Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function Newsletter() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus('success');
+        setMessage('Thank you for subscribing!');
+        setEmail('');
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Failed to subscribe. Please try again.');
+      }
+    } catch (error) {
+      setStatus('error');
+      setMessage('Network error. Please try again.');
+    }
+  };
+
   return (
     <section className="bg-black text-white py-16 border-t border-gold-900/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,20 +50,39 @@ export default function Newsletter() {
             </p>
           </div>
           <div className="w-full md:w-auto flex-1 max-w-md">
-            <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+            <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleSubmit}>
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email address"
                 className="flex-1 bg-white/5 border border-gold-500/30 rounded-lg px-4 py-3 text-white placeholder-gold-200/50 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all"
                 required
+                disabled={status === 'loading'}
               />
               <button
                 type="submit"
-                className="bg-gold-500 hover:bg-gold-400 text-black font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap"
+                disabled={status === 'loading'}
+                className="bg-gold-500 hover:bg-gold-400 text-black font-semibold px-6 py-3 rounded-lg transition-colors whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Subscribe Now
+                {status === 'loading' ? 'Subscribing...' : 'Subscribe Now'}
               </button>
             </form>
+            
+            {status === 'success' && (
+              <div className="mt-3 flex items-center text-sm text-green-400">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                {message}
+              </div>
+            )}
+            
+            {status === 'error' && (
+              <div className="mt-3 flex items-center text-sm text-red-400">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {message}
+              </div>
+            )}
+
             <p className="text-xs text-gold-200/40 mt-3 text-center sm:text-left">
               We respect your privacy. Unsubscribe at any time.
             </p>

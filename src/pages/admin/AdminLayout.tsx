@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Users, Settings, FileText, Video, Calendar, Activity, Heart, Mail, GraduationCap, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, Settings, FileText, Video, Calendar, Activity, Heart, Mail, GraduationCap, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminLayout() {
@@ -49,6 +49,7 @@ export default function AdminLayout() {
     { name: 'Inquiries', path: '/admin/dashboard/inquiries', icon: MessageSquare, badge: badges.inquiries },
     { name: 'Donations', path: '/admin/dashboard/donations', icon: Heart, badge: badges.donations },
     { name: 'Contact Forms', path: '/admin/dashboard/contacts', icon: Mail, badge: badges.contacts },
+    { name: 'Subscribers', path: '/admin/dashboard/subscribers', icon: Send },
   ];
 
   return (

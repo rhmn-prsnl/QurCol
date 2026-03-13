@@ -139,6 +139,24 @@ export default function Login() {
             </button>
           </div>
         </form>
+
+        <div className="mt-6 pt-6 border-t border-gold-200/50 dark:border-gold-900/30">
+          <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3 text-center">Demo Credentials</h3>
+          <div className="space-y-2 text-xs text-zinc-600 dark:text-zinc-400">
+            <div className="flex justify-between bg-white dark:bg-black p-2 rounded border border-zinc-200 dark:border-zinc-800">
+              <span className="font-semibold">Admin:</span>
+              <span>admin@edulms.com / admin123</span>
+            </div>
+            <div className="flex justify-between bg-white dark:bg-black p-2 rounded border border-zinc-200 dark:border-zinc-800">
+              <span className="font-semibold">Student:</span>
+              <span>student@edulms.com / student123</span>
+            </div>
+            <div className="flex justify-between bg-white dark:bg-black p-2 rounded border border-zinc-200 dark:border-zinc-800">
+              <span className="font-semibold">Faculty:</span>
+              <span>faculty@edulms.com / faculty123</span>
+            </div>
+          </div>
+        </div>
       </motion.div>
     </div>
   );

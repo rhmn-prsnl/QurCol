@@ -1,63 +1,96 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Video as VideoIcon } from 'lucide-react';
-
-interface Video {
-  id: string;
-  title: string;
-  description: string;
-  youtubeLink: string;
-  courseId: string;
-  categories: string[];
-}
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { Plus, Edit, Trash2, Video as VideoIcon, X } from 'lucide-react';
 
 export default function AdminVideos() {
-  const [videos, setVideos] = useState<Video[]>([
-    {
-      id: '1',
-      title: 'Introduction to Trading',
-      description: 'Learn the basics of trading in this introductory video.',
-      youtubeLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      courseId: '1',
-      categories: ['Free Video', 'Recent Video']
-    }
-  ]);
+  const { token } = useAuth();
+  const [videos, setVideos] = useState<any[]>([]);
+  const [modules, setModules] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [newVideo, setNewVideo] = useState<Omit<Video, 'id'>>({
-    title: '',
-    description: '',
-    youtubeLink: '',
-    courseId: '',
-    categories: []
-  });
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [newVideo, setNewVideo] = useState({ title: '', description: '', youtube_id: '', module_id: '', order_position: 1 });
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [updateConfirm, setUpdateConfirm] = useState<boolean>(false);
 
-  const availableCategories = ['Free Video', 'Weekly Video', 'Recent Video', 'Popular Video', 'Featured Video'];
-  const mockCourses = [{ id: '1', title: 'Advanced Trading Strategies' }, { id: '2', title: 'Beginner Basics' }];
+  useEffect(() => {
+    fetchVideos();
+    fetchModules();
+  }, [token]);
 
-  const handleAddVideo = (e: React.FormEvent) => {
-    e.preventDefault();
-    const video: Video = {
-      ...newVideo,
-      id: Date.now().toString()
-    };
-    setVideos([...videos, video]);
-    setIsAdding(false);
-    setNewVideo({ title: '', description: '', youtubeLink: '', courseId: '', categories: [] });
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this video?')) {
-      setVideos(videos.filter(v => v.id !== id));
+  const fetchModules = async () => {
+    try {
+      const res = await fetch('/api/admin/modules', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setModules(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch modules', err);
     }
   };
 
-  const toggleCategory = (category: string) => {
-    setNewVideo(prev => {
-      if (prev.categories.includes(category)) {
-        return { ...prev, categories: prev.categories.filter(c => c !== category) };
-      } else {
-        return { ...prev, categories: [...prev.categories, category] };
+  const fetchVideos = async () => {
+    try {
+      const res = await fetch('/api/admin/videos', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVideos(data);
       }
-    });
+    } catch (err) {
+      console.error('Failed to fetch videos', err);
+    }
+  };
+
+  const handleSaveVideo = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (isEditing && !updateConfirm) {
+      setUpdateConfirm(true);
+      return;
+    }
+
+    try {
+      const url = isEditing ? `/api/admin/videos/${isEditing}` : '/api/admin/videos';
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newVideo)
+      });
+
+      if (res.ok) {
+        setIsAdding(false);
+        setIsEditing(null);
+        setUpdateConfirm(false);
+        setNewVideo({ title: '', description: '', youtube_id: '', module_id: '', order_position: 1 });
+        fetchVideos();
+      }
+    } catch (err) {
+      console.error('Failed to save video', err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/videos/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setDeleteConfirm(null);
+        fetchVideos();
+      }
+    } catch (err) {
+      console.error('Failed to delete video', err);
+    }
   };
 
   return (
@@ -65,25 +98,34 @@ export default function AdminVideos() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-black dark:text-white">Manage Videos</h1>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            setIsAdding(true);
+            setIsEditing(null);
+            setNewVideo({ title: '', description: '', youtube_id: '', module_id: '', order_position: 1 });
+          }}
           className="flex items-center px-4 py-2 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors shadow-sm shadow-gold-900/20 font-medium"
         >
           <Plus className="w-5 h-5 mr-2" /> Add Video
         </button>
       </div>
 
-      {isAdding && (
-        <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-gold-200/50 dark:border-gold-900/30 mb-8">
-          <h2 className="text-lg font-bold text-black dark:text-white mb-4">Add New Video</h2>
-          <form onSubmit={handleAddVideo} className="space-y-4">
+      {(isAdding || isEditing !== null) && (
+        <div className="bg-zinc-50 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-gold-200/50 dark:border-gold-900/30 mb-8 relative">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-black dark:text-white">{isAdding ? 'Add New Video' : 'Edit Video'}</h2>
+            <button onClick={() => { setIsAdding(false); setIsEditing(null); }} className="text-zinc-500 hover:text-red-500">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <form onSubmit={handleSaveVideo} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Video Title</label>
                 <input required type="text" value={newVideo.title} onChange={e => setNewVideo({...newVideo, title: e.target.value})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">YouTube Link</label>
-                <input required type="url" value={newVideo.youtubeLink} onChange={e => setNewVideo({...newVideo, youtubeLink: e.target.value})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" placeholder="https://youtube.com/watch?v=..." />
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">YouTube Video ID</label>
+                <input required type="text" value={newVideo.youtube_id} onChange={e => setNewVideo({...newVideo, youtube_id: e.target.value})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" placeholder="e.g. dQw4w9WgXcQ" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
@@ -93,40 +135,29 @@ export default function AdminVideos() {
               <div className="md:col-span-2 border-t border-zinc-200 dark:border-zinc-800 pt-4 mt-2">
                 <h3 className="text-md font-semibold text-black dark:text-white mb-3">Video Placement</h3>
                 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assign to Course (Optional)</label>
-                  <select 
-                    value={newVideo.courseId} 
-                    onChange={e => setNewVideo({...newVideo, courseId: e.target.value})} 
-                    className="w-full md:w-1/2 p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
-                  >
-                    <option value="">None (Standalone Video)</option>
-                    {mockCourses.map(course => (
-                      <option key={course.id} value={course.id}>{course.title}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Display in Sections (Multiple selection allowed)</label>
-                  <div className="flex flex-wrap gap-3">
-                    {availableCategories.map(category => (
-                      <label key={category} className="flex items-center space-x-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={newVideo.categories.includes(category)}
-                          onChange={() => toggleCategory(category)}
-                          className="w-4 h-4 text-gold-500 bg-white border-zinc-300 rounded focus:ring-gold-500 dark:focus:ring-gold-600 dark:ring-offset-zinc-800 focus:ring-2 dark:bg-zinc-700 dark:border-zinc-600"
-                        />
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300">{category}</span>
-                      </label>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Assign to Module</label>
+                    <select 
+                      value={newVideo.module_id} 
+                      onChange={e => setNewVideo({...newVideo, module_id: e.target.value})} 
+                      className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500"
+                    >
+                      <option value="">Select Module</option>
+                      {modules.map(module => (
+                        <option key={module.id} value={module.id}>{module.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Order Position</label>
+                    <input type="number" value={newVideo.order_position} onChange={e => setNewVideo({...newVideo, order_position: parseInt(e.target.value)})} className="w-full p-2 border border-gold-200/50 dark:border-gold-900/30 rounded-lg bg-white dark:bg-black text-black dark:text-white focus:ring-2 focus:ring-gold-500 focus:border-gold-500" />
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">Cancel</button>
+              <button type="button" onClick={() => { setIsAdding(false); setIsEditing(null); }} className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">Cancel</button>
               <button type="submit" className="px-4 py-2 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors shadow-sm shadow-gold-900/20 font-medium">Save Video</button>
             </div>
           </form>
@@ -139,8 +170,8 @@ export default function AdminVideos() {
             <thead className="text-xs text-zinc-700 uppercase bg-white dark:bg-black dark:text-zinc-300 border-b border-gold-200/50 dark:border-gold-900/30">
               <tr>
                 <th scope="col" className="px-6 py-3">Video Title</th>
-                <th scope="col" className="px-6 py-3">Course</th>
-                <th scope="col" className="px-6 py-3">Sections</th>
+                <th scope="col" className="px-6 py-3">Module</th>
+                <th scope="col" className="px-6 py-3">Order</th>
                 <th scope="col" className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -148,30 +179,32 @@ export default function AdminVideos() {
               {videos.map(video => (
                 <tr key={video.id} className="bg-zinc-50 border-b border-gold-100 dark:bg-zinc-900 dark:border-gold-900/20 hover:bg-white dark:hover:bg-black transition-colors">
                   <td className="px-6 py-4 font-medium text-black dark:text-white flex items-center gap-3">
-                    <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-800 rounded flex items-center justify-center text-zinc-500">
-                      <VideoIcon className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                      <VideoIcon className="w-5 h-5 text-zinc-500" />
                     </div>
                     {video.title}
                   </td>
-                  <td className="px-6 py-4">
-                    {video.courseId ? mockCourses.find(c => c.id === video.courseId)?.title : <span className="text-zinc-400 italic">None</span>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {video.categories.map(cat => (
-                        <span key={cat} className="px-2 py-1 text-xs bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400 rounded-full">
-                          {cat}
-                        </span>
-                      ))}
-                      {video.categories.length === 0 && <span className="text-zinc-400 italic">Unassigned</span>}
-                    </div>
-                  </td>
+                  <td className="px-6 py-4">{video.module_title || video.module_id}</td>
+                  <td className="px-6 py-4">{video.order_position}</td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-zinc-600 dark:text-zinc-400 hover:underline mr-3" title="Edit">
-                      <Edit className="w-4 h-4 inline" />
+                    <button 
+                      onClick={() => {
+                        setIsEditing(video.id);
+                        setNewVideo({
+                          title: video.title,
+                          description: video.description,
+                          youtube_id: video.youtube_id,
+                          module_id: video.module_id,
+                          order_position: video.order_position
+                        });
+                        setIsAdding(false);
+                      }}
+                      className="font-medium text-gold-600 dark:text-gold-400 hover:underline mr-3"
+                    >
+                      <Edit className="w-4 h-4 inline" /> Edit
                     </button>
-                    <button onClick={() => handleDelete(video.id)} className="text-red-600 dark:text-red-400 hover:underline" title="Delete">
-                      <Trash2 className="w-4 h-4 inline" />
+                    <button onClick={() => setDeleteConfirm(video.id)} className="font-medium text-red-600 dark:text-red-400 hover:underline">
+                      <Trash2 className="w-4 h-4 inline" /> Delete
                     </button>
                   </td>
                 </tr>
@@ -179,7 +212,7 @@ export default function AdminVideos() {
               {videos.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-zinc-500 dark:text-zinc-400">
-                    No videos found. Click "Add Video" to create one.
+                    No videos found. Create one to get started.
                   </td>
                 </tr>
               )}
@@ -187,6 +220,53 @@ export default function AdminVideos() {
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full border border-zinc-200 dark:border-zinc-800">
+            <h3 className="text-xl font-bold text-black dark:text-white mb-4">Confirm Deletion</h3>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-6">Are you sure you want to delete this video? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-4">
+              <button 
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDelete(deleteConfirm)}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Update Confirmation Modal */}
+      {updateConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full border border-zinc-200 dark:border-zinc-800">
+            <h3 className="text-xl font-bold text-black dark:text-white mb-4">Confirm Update</h3>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-6">Are you sure you want to save these changes to the video?</p>
+            <div className="flex justify-end space-x-4">
+              <button 
+                onClick={() => setUpdateConfirm(false)}
+                className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleSaveVideo()}
+                className="px-4 py-2 bg-gold-500 text-black rounded-lg hover:bg-gold-400 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

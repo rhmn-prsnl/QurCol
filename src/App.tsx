@@ -39,6 +39,7 @@ import AdminEvents from './pages/admin/AdminEvents';
 import AdminDonations from './pages/admin/AdminDonations';
 import AdminContacts from './pages/admin/AdminContacts';
 import AdminInquiries from './pages/admin/AdminInquiries';
+import AdminSubscribers from './pages/admin/AdminSubscribers';
 
 import AdminContent from './pages/admin/AdminContent';
 import AdminPopups from './pages/admin/AdminPopups';
@@ -90,6 +91,7 @@ const AppContent = () => {
             <Route path="inquiries" element={<AdminInquiries />} />
             <Route path="donations" element={<AdminDonations />} />
             <Route path="contacts" element={<AdminContacts />} />
+            <Route path="subscribers" element={<AdminSubscribers />} />
           </Route>
         </Routes>
       </main>

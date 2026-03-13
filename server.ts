@@ -152,7 +152,34 @@ db.exec(`
     image TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    status TEXT DEFAULT 'active',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS popups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    active BOOLEAN DEFAULT 1,
+    start_date TEXT,
+    end_date TEXT,
+    frequency TEXT DEFAULT 'once_per_session',
+    delay INTEGER DEFAULT 5,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Alter tables to add new columns if they don't exist
+try { db.prepare('ALTER TABLE courses ADD COLUMN duration TEXT').run(); } catch (e) {}
+try { db.prepare('ALTER TABLE users ADD COLUMN phone TEXT').run(); } catch (e) {}
+try { db.prepare('ALTER TABLE users ADD COLUMN courses TEXT').run(); } catch (e) {}
+try { db.prepare('ALTER TABLE users ADD COLUMN joining_date TEXT').run(); } catch (e) {}
+try { db.prepare('ALTER TABLE users ADD COLUMN status TEXT DEFAULT "active"').run(); } catch (e) {}
 
 // Seed Admin User if not exists
 const adminEmail = 'admin@edulms.com';
@@ -160,6 +187,22 @@ const existingAdmin = db.prepare('SELECT * FROM users WHERE email = ?').get(admi
 if (!existingAdmin) {
   const hashedPassword = bcrypt.hashSync('admin123', 10);
   db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run('Admin', adminEmail, hashedPassword, 'super_admin');
+}
+
+// Seed Student User if not exists
+const studentEmail = 'student@edulms.com';
+const existingStudent = db.prepare('SELECT * FROM users WHERE email = ?').get(studentEmail);
+if (!existingStudent) {
+  const hashedPassword = bcrypt.hashSync('student123', 10);
+  db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run('Student User', studentEmail, hashedPassword, 'student');
+}
+
+// Seed Faculty User if not exists
+const facultyEmail = 'faculty@edulms.com';
+const existingFaculty = db.prepare('SELECT * FROM users WHERE email = ?').get(facultyEmail);
+if (!existingFaculty) {
+  const hashedPassword = bcrypt.hashSync('faculty123', 10);
+  db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run('Faculty User', facultyEmail, hashedPassword, 'faculty');
 }
 
 // Seed some dummy data if courses are empty
@@ -344,14 +387,49 @@ async function startServer() {
     const users = (db.prepare('SELECT COUNT(*) as count FROM users').get() as any).count;
     const courses = (db.prepare('SELECT COUNT(*) as count FROM courses').get() as any).count;
     const videos = (db.prepare('SELECT COUNT(*) as count FROM videos').get() as any).count;
-    res.json({ users, courses, videos });
+    const subscribers = (db.prepare("SELECT COUNT(*) as count FROM subscribers WHERE status = 'active'").get() as any).count;
+    res.json({ users, courses, videos, subscribers });
+  });
+
+  // Admin CRUD Popups
+  app.get('/api/popups', (req, res) => {
+    const popups = db.prepare('SELECT * FROM popups WHERE active = 1').all();
+    res.json(popups);
+  });
+
+  app.get('/api/admin/popups', authenticateToken, requireAdmin, (req, res) => {
+    const popups = db.prepare('SELECT * FROM popups ORDER BY created_at DESC').all();
+    res.json(popups);
+  });
+
+  app.post('/api/admin/popups', authenticateToken, requireAdmin, (req, res) => {
+    const { name, active, start_date, end_date, frequency, delay, content, image_url } = req.body;
+    const result = db.prepare('INSERT INTO popups (name, active, start_date, end_date, frequency, delay, content, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(name, active ? 1 : 0, start_date, end_date, frequency, delay, content, image_url);
+    res.json({ id: result.lastInsertRowid });
+  });
+
+  app.put('/api/admin/popups/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { name, active, start_date, end_date, frequency, delay, content, image_url } = req.body;
+    db.prepare('UPDATE popups SET name = ?, active = ?, start_date = ?, end_date = ?, frequency = ?, delay = ?, content = ?, image_url = ? WHERE id = ?').run(name, active ? 1 : 0, start_date, end_date, frequency, delay, content, image_url, req.params.id);
+    res.json({ success: true });
+  });
+
+  app.delete('/api/admin/popups/:id', authenticateToken, requireAdmin, (req, res) => {
+    db.prepare('DELETE FROM popups WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
   });
 
   // Admin CRUD Courses
   app.post('/api/admin/courses', authenticateToken, requireAdmin, (req, res) => {
-    const { title, description, category, level, instructor, thumbnail } = req.body;
-    const result = db.prepare('INSERT INTO courses (title, description, category, level, instructor, thumbnail) VALUES (?, ?, ?, ?, ?, ?)').run(title, description, category, level, instructor, thumbnail);
+    const { title, description, category, level, instructor, thumbnail, duration } = req.body;
+    const result = db.prepare('INSERT INTO courses (title, description, category, level, instructor, thumbnail, duration) VALUES (?, ?, ?, ?, ?, ?, ?)').run(title, description, category, level, instructor, thumbnail, duration);
     res.json({ id: result.lastInsertRowid });
+  });
+
+  app.put('/api/admin/courses/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { title, description, category, level, instructor, thumbnail, duration } = req.body;
+    db.prepare('UPDATE courses SET title = ?, description = ?, category = ?, level = ?, instructor = ?, thumbnail = ?, duration = ? WHERE id = ?').run(title, description, category, level, instructor, thumbnail, duration, req.params.id);
+    res.json({ success: true });
   });
 
   app.delete('/api/admin/courses/:id', authenticateToken, requireAdmin, (req, res) => {
@@ -360,27 +438,64 @@ async function startServer() {
   });
 
   // Admin CRUD Modules
+  app.get('/api/admin/modules', authenticateToken, requireAdmin, (req, res) => {
+    const modules = db.prepare('SELECT * FROM modules ORDER BY order_position ASC').all();
+    res.json(modules);
+  });
+
   app.post('/api/admin/modules', authenticateToken, requireAdmin, (req, res) => {
     const { course_id, title, order_position } = req.body;
     const result = db.prepare('INSERT INTO modules (course_id, title, order_position) VALUES (?, ?, ?)').run(course_id, title, order_position);
     res.json({ id: result.lastInsertRowid });
   });
 
+  app.put('/api/admin/modules/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { title, order_position } = req.body;
+    db.prepare('UPDATE modules SET title = ?, order_position = ? WHERE id = ?').run(title, order_position, req.params.id);
+    res.json({ success: true });
+  });
+
+  app.delete('/api/admin/modules/:id', authenticateToken, requireAdmin, (req, res) => {
+    db.prepare('DELETE FROM modules WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
   // Admin CRUD Videos
+  app.get('/api/admin/videos', authenticateToken, requireAdmin, (req, res) => {
+    const videos = db.prepare(`
+      SELECT v.*, m.title as module_title 
+      FROM videos v 
+      LEFT JOIN modules m ON v.module_id = m.id 
+      ORDER BY v.order_position ASC
+    `).all();
+    res.json(videos);
+  });
+
   app.post('/api/admin/videos', authenticateToken, requireAdmin, (req, res) => {
     const { module_id, title, youtube_id, description, order_position } = req.body;
     const result = db.prepare('INSERT INTO videos (module_id, title, youtube_id, description, order_position) VALUES (?, ?, ?, ?, ?)').run(module_id, title, youtube_id, description, order_position);
     res.json({ id: result.lastInsertRowid });
   });
 
+  app.put('/api/admin/videos/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { title, youtube_id, description, order_position } = req.body;
+    db.prepare('UPDATE videos SET title = ?, youtube_id = ?, description = ?, order_position = ? WHERE id = ?').run(title, youtube_id, description, order_position, req.params.id);
+    res.json({ success: true });
+  });
+
+  app.delete('/api/admin/videos/:id', authenticateToken, requireAdmin, (req, res) => {
+    db.prepare('DELETE FROM videos WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
   // Admin Users
   app.get('/api/admin/users', authenticateToken, requireAdmin, (req, res) => {
-    const users = db.prepare('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC').all();
+    const users = db.prepare('SELECT id, name, email, role, phone, courses, joining_date, status, created_at FROM users ORDER BY created_at DESC').all();
     res.json(users);
   });
 
   app.post('/api/admin/users', authenticateToken, requireAdmin, (req: any, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone, courses, joining_date, status } = req.body;
     
     // Only super_admin can create other admins
     if (role === 'admin' && req.user.role !== 'super_admin') {
@@ -388,11 +503,12 @@ async function startServer() {
     }
     
     // Ensure role is valid
-    const validRole = (role === 'admin' || role === 'user' || role === 'faculty') ? role : 'user';
+    const validRole = (role === 'admin' || role === 'student' || role === 'faculty') ? role : 'student';
 
     try {
       const hashedPassword = bcrypt.hashSync(password, 10);
-      const result = db.prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)').run(name, email, hashedPassword, validRole);
+      const coursesJson = courses ? JSON.stringify(courses) : null;
+      const result = db.prepare('INSERT INTO users (name, email, password, role, phone, courses, joining_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(name, email, hashedPassword, validRole, phone, coursesJson, joining_date, status || 'active');
       res.json({ id: result.lastInsertRowid, name, email, role: validRole });
     } catch (error: any) {
       if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -401,6 +517,48 @@ async function startServer() {
         res.status(500).json({ error: 'Database error' });
       }
     }
+  });
+
+  app.put('/api/admin/users/:id', authenticateToken, requireAdmin, (req: any, res) => {
+    const { name, email, role, password, phone, courses, joining_date, status } = req.body;
+    
+    if (role === 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only super admin can create other admins' });
+    }
+    
+    const validRole = (role === 'admin' || role === 'student' || role === 'faculty') ? role : 'student';
+
+    try {
+      const coursesJson = courses ? JSON.stringify(courses) : null;
+      if (password) {
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        db.prepare('UPDATE users SET name = ?, email = ?, role = ?, password = ?, phone = ?, courses = ?, joining_date = ?, status = ? WHERE id = ?').run(name, email, validRole, hashedPassword, phone, coursesJson, joining_date, status || 'active', req.params.id);
+      } else {
+        db.prepare('UPDATE users SET name = ?, email = ?, role = ?, phone = ?, courses = ?, joining_date = ?, status = ? WHERE id = ?').run(name, email, validRole, phone, coursesJson, joining_date, status || 'active', req.params.id);
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        res.status(400).json({ error: 'Email already exists' });
+      } else {
+        res.status(500).json({ error: 'Database error' });
+      }
+    }
+  });
+
+  app.patch('/api/admin/users/:id/status', authenticateToken, requireAdmin, (req, res) => {
+    const { status } = req.body;
+    try {
+      db.prepare('UPDATE users SET status = ? WHERE id = ?').run(status, req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', authenticateToken, requireAdmin, (req, res) => {
+    db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
   });
 
   // News
@@ -496,6 +654,12 @@ async function startServer() {
     res.json({ id: result.lastInsertRowid });
   });
 
+  app.put('/api/admin/activities/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { title, date, description, thumbnail, youtube_link } = req.body;
+    db.prepare('UPDATE activities SET title = ?, date = ?, description = ?, thumbnail = ?, youtube_link = ? WHERE id = ?').run(title, date, description, thumbnail, youtube_link, req.params.id);
+    res.json({ success: true });
+  });
+
   app.delete('/api/admin/activities/:id', authenticateToken, requireAdmin, (req, res) => {
     db.prepare('DELETE FROM activities WHERE id = ?').run(req.params.id);
     res.json({ success: true });
@@ -513,8 +677,40 @@ async function startServer() {
     res.json({ id: result.lastInsertRowid });
   });
 
+  app.put('/api/admin/events/:id', authenticateToken, requireAdmin, (req, res) => {
+    const { title, date, time, location, description, image } = req.body;
+    db.prepare('UPDATE events SET title = ?, date = ?, time = ?, location = ?, description = ?, image = ? WHERE id = ?').run(title, date, time, location, description, image, req.params.id);
+    res.json({ success: true });
+  });
+
   app.delete('/api/admin/events/:id', authenticateToken, requireAdmin, (req, res) => {
     db.prepare('DELETE FROM events WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  });
+
+  // Subscribers
+  app.post('/api/subscribers', (req, res) => {
+    const { email } = req.body;
+    try {
+      db.prepare('INSERT INTO subscribers (email) VALUES (?)').run(email);
+      res.json({ success: true });
+    } catch (error: any) {
+      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        res.status(400).json({ error: 'Email already subscribed' });
+      } else {
+        res.status(500).json({ error: 'Database error' });
+      }
+    }
+  });
+
+  app.get('/api/admin/subscribers', authenticateToken, requireAdmin, (req, res) => {
+    const subscribers = db.prepare('SELECT * FROM subscribers ORDER BY created_at DESC').all();
+    res.json(subscribers);
+  });
+
+  app.put('/api/admin/subscribers/:id/status', authenticateToken, requireAdmin, (req, res) => {
+    const { status } = req.body;
+    db.prepare('UPDATE subscribers SET status = ? WHERE id = ?').run(status, req.params.id);
     res.json({ success: true });
   });
 
